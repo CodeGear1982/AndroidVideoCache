@@ -3,6 +3,7 @@ package com.danikula.videocache;
 import android.text.TextUtils;
 
 import com.danikula.videocache.file.FileCache;
+import com.danikula.videocache.headers.HeaderInjector;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -24,6 +25,7 @@ class HttpProxyCache extends ProxyCache {
     private final HttpUrlSource source;
     private final FileCache cache;
     private CacheListener listener;
+    private HeaderInjector injector;
 
     public HttpProxyCache(HttpUrlSource source, FileCache cache) {
         super(source, cache);
@@ -33,6 +35,10 @@ class HttpProxyCache extends ProxyCache {
 
     public void registerCacheListener(CacheListener cacheListener) {
         this.listener = cacheListener;
+    }
+
+    public void registerHeaderInjector(HeaderInjector headerInjector) {
+        this.injector = headerInjector;
     }
 
     public void processRequest(GetRequest request, Socket socket) throws IOException, ProxyCacheException {
@@ -85,6 +91,7 @@ class HttpProxyCache extends ProxyCache {
 
     private void responseWithoutCache(OutputStream out, long offset) throws ProxyCacheException, IOException {
         HttpUrlSource newSourceNoCache = new HttpUrlSource(this.source);
+        newSourceNoCache.setHeaderInjector(injector);
         try {
             newSourceNoCache.open((int) offset);
             byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
@@ -109,4 +116,5 @@ class HttpProxyCache extends ProxyCache {
             listener.onCacheAvailable(cache.file, source.getUrl(), percents);
         }
     }
+
 }

@@ -2,6 +2,8 @@ package com.danikula.videocache;
 
 import android.text.TextUtils;
 
+import com.danikula.videocache.headers.EmptyHeadersInjector;
+import com.danikula.videocache.headers.HeaderInjector;
 import com.danikula.videocache.sourcestorage.SourceInfoStorage;
 import com.danikula.videocache.sourcestorage.SourceInfoStorageFactory;
 
@@ -14,6 +16,7 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Map;
 
 import static com.danikula.videocache.Preconditions.checkNotNull;
 import static com.danikula.videocache.ProxyCacheUtils.DEFAULT_BUFFER_SIZE;
@@ -37,6 +40,7 @@ public class HttpUrlSource implements Source {
     private SourceInfo sourceInfo;
     private HttpURLConnection connection;
     private InputStream inputStream;
+    private HeaderInjector headerInjector = new EmptyHeadersInjector();
 
     public HttpUrlSource(String url) {
         this(url, SourceInfoStorageFactory.newEmptySourceInfoStorage());
@@ -52,6 +56,10 @@ public class HttpUrlSource implements Source {
     public HttpUrlSource(HttpUrlSource source) {
         this.sourceInfo = source.sourceInfo;
         this.sourceInfoStorage = source.sourceInfoStorage;
+    }
+
+    public void setHeaderInjector(HeaderInjector injector) {
+        this.headerInjector = injector;
     }
 
     @Override
@@ -150,6 +158,14 @@ public class HttpUrlSource implements Source {
         do {
             LOG.debug("Open connection " + (offset > 0 ? " with offset " + offset : "") + " to " + url);
             connection = (HttpURLConnection) new URL(url).openConnection();
+
+            Map<String, String> extraHeaders = headerInjector.loadFromUrl(url);
+            if(extraHeaders != null && !extraHeaders.isEmpty()) {
+                for (Map.Entry<String, String> header : extraHeaders.entrySet()) {
+                    connection.setRequestProperty(header.getKey(), header.getValue());
+                }
+            }
+
             if (offset > 0) {
                 connection.setRequestProperty("Range", "bytes=" + offset + "-");
             }

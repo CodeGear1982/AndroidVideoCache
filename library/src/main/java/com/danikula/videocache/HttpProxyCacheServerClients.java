@@ -83,6 +83,7 @@ final class HttpProxyCacheServerClients {
         FileCache cache = new FileCache(config.generateCacheFile(url), config.diskUsage);
         HttpProxyCache httpProxyCache = new HttpProxyCache(source, cache);
         httpProxyCache.registerCacheListener(uiCacheListener);
+        httpProxyCache.registerHeaderInjector(config.headerInjector);
         return httpProxyCache;
     }
 
